@@ -13,7 +13,13 @@ export function renderRoads(features: Road[], container: Container, scale: numbe
     for (let i = 1; i < iso.length; i++) {
       g.lineTo(iso[i].x, iso[i].y)
     }
-    g.stroke({ width: road.width * scale * 0.7, color: 0x616161, alpha: 0.9 })
+    g.stroke({
+      width: road.width * scale * 0.7,
+      color: 0x616161,
+      alpha: 0.9,
+      join: 'round',
+      cap: 'round',
+    })
 
     container.addChild(g)
   }

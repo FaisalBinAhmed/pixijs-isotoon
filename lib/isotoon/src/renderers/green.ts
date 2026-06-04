@@ -6,7 +6,7 @@ export function renderGreens(features: GreenArea[], container: Container, scale:
   for (const area of features) {
     const g = new Graphics()
     const iso = area.polygon.map(p => worldToIso(p, scale))
-    drawPolygon(g, iso, 0x4CAF50)
+    drawPolygon(g, iso, area.color ?? 0x4CAF50)
     container.addChild(g)
   }
 }

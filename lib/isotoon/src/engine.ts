@@ -7,6 +7,7 @@ export interface EngineOptions {
   width: number
   height: number
   scale?: number
+  palette?: number[]
 }
 
 export class IsometricEngine {
@@ -14,6 +15,9 @@ export class IsometricEngine {
   private world: Container
   private scale: number
   private options: EngineOptions
+  private palette?: number[]
+  private lastFeatures: MapFeatures | null = null
+  private pendingFeatures: MapFeatures | null = null
   private dragging = false
   private lastPos = { x: 0, y: 0 }
   private initialized = false
@@ -23,6 +27,15 @@ export class IsometricEngine {
     this.app = new Application()
     this.world = new Container()
     this.scale = options.scale ?? 0.8
+    this.palette = options.palette
+  }
+
+  setPalette(palette: number[]) {
+    this.palette = palette
+  }
+
+  rerender() {
+    if (this.lastFeatures) this.render(this.lastFeatures)
   }
 
   async init() {
@@ -40,9 +53,28 @@ export class IsometricEngine {
     this.world.position.set(this.options.width / 2, this.options.height / 2)
     this.setupInteraction()
     this.initialized = true
+
+    if (this.pendingFeatures) {
+      const f = this.pendingFeatures
+      this.pendingFeatures = null
+      this.render(f)
+    }
+  }
+
+  resetCamera() {
+    if (!this.initialized) return
+    this.world.position.set(this.options.width / 2, this.options.height / 2)
+    this.world.scale.set(1, 1)
   }
 
   render(features: MapFeatures) {
+    if (!this.initialized) {
+      // Queue until init completes; the latest features win.
+      this.pendingFeatures = features
+      this.lastFeatures = features
+      return
+    }
+    this.lastFeatures = features
     this.world.removeChildren()
 
     const layers = {
@@ -56,7 +88,7 @@ export class IsometricEngine {
     renderWaters(features.waters, layers.water, this.scale)
     renderGreens(features.greens, layers.green, this.scale)
     renderRoads(features.roads, layers.roads, this.scale)
-    renderBuildings(features.buildings, layers.buildings, this.scale)
+    renderBuildings(features.buildings, layers.buildings, this.scale, this.palette)
     renderTrees(features.trees, layers.trees, this.scale)
 
     this.world.addChild(layers.water)

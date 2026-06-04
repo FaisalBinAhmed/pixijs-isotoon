@@ -1,5 +1,6 @@
 import type { GeoPoint, MapFeatures, Building, Road, GreenArea, Tree, Point } from './types'
 import { geoToWorld } from './projection'
+import { parseColor, materialColor } from './colors'
 
 interface OsmElement {
   type: 'node' | 'way' | 'relation'
@@ -36,21 +37,67 @@ export function loadMapFeatures(raw: OsmData, center: GeoPoint): MapFeatures {
 
     if (el.type !== 'way' || !el.tags || !el.nodes) continue
 
+    const feature = classifyWay(el.tags)
+    if (!feature) continue
+
     const polygon = resolveNodes(el.nodes, nodeMap, center)
     if (polygon.length < 2) continue
 
-    if (el.tags.building) {
-      const levels = parseInt(el.tags['building:levels'] || '3', 10)
-      buildings.push({ polygon, height: levels * 3 })
-    } else if (el.tags.highway) {
-      const width = parseRoadWidth(el.tags.highway)
-      roads.push({ path: polygon, width })
-    } else if (el.tags.landuse === 'grass' || el.tags.leisure === 'park') {
-      greens.push({ polygon })
+    switch (feature.kind) {
+      case 'building':
+        buildings.push({
+          polygon,
+          height: feature.height,
+          color: feature.color,
+          roofColor: feature.roofColor,
+        })
+        break
+      case 'road':
+        roads.push({ path: polygon, width: feature.width })
+        break
+      case 'green':
+        greens.push({ polygon, color: feature.color })
+        break
     }
   }
 
   return { buildings, roads, greens, waters: [], trees }
+}
+
+type ClassifiedFeature =
+  | { kind: 'building'; height: number; color?: number; roofColor?: number }
+  | { kind: 'road'; width: number }
+  | { kind: 'green'; color?: number }
+
+function classifyWay(tags: Record<string, string>): ClassifiedFeature | null {
+  if (tags.building) {
+    return {
+      kind: 'building',
+      height: parseBuildingHeight(tags),
+      color: parseColor(tags['building:colour'] ?? tags['building:color'])
+        ?? materialColor(tags['building:material']),
+      roofColor: parseColor(tags['roof:colour'] ?? tags['roof:color'])
+        ?? materialColor(tags['roof:material']),
+    }
+  }
+
+  if (tags['building:part']) return null
+
+  if (tags.highway) {
+    return { kind: 'road', width: parseRoadWidth(tags.highway) }
+  }
+
+  switch (tags.landuse) {
+    case 'grass':         return { kind: 'green', color: 0x81C784 }
+    case 'meadow':        return { kind: 'green', color: 0xAED581 }
+    case 'village_green': return { kind: 'green', color: 0x9CCC65 }
+    case 'flowerbed':     return { kind: 'green', color: 0xC5E1A5 }
+    case 'forest':        return { kind: 'green', color: 0x2E7D32 }
+  }
+
+  if (tags.leisure === 'park') return { kind: 'green', color: 0x66BB6A }
+
+  return null
 }
 
 function resolveNodes(nodeIds: number[], nodeMap: Map<number, GeoPoint>, center: GeoPoint): Point[] {
@@ -77,4 +124,14 @@ function parseRoadWidth(highway: string): number {
     case 'path': return 2
     default: return 4
   }
+}
+
+function parseBuildingHeight(tags: Record<string, string>): number {
+  const raw = tags['height'] ?? tags['building:height']
+  if (raw) {
+    const n = parseFloat(raw)
+    if (!isNaN(n) && n > 0) return n
+  }
+  const levels = parseInt(tags['building:levels'] || '3', 10)
+  return (isNaN(levels) ? 3 : levels) * 3
 }

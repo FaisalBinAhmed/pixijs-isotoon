@@ -11,6 +11,8 @@ export interface GeoPoint {
 export interface Building {
   polygon: Point[]
   height: number
+  color?: number
+  roofColor?: number
 }
 
 export interface Road {
@@ -20,6 +22,7 @@ export interface Road {
 
 export interface GreenArea {
   polygon: Point[]
+  color?: number
 }
 
 export interface WaterBody {
