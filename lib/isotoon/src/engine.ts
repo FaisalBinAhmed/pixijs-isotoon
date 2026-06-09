@@ -78,7 +78,8 @@ export class IsometricEngine {
       return
     }
     this.lastFeatures = features
-    this.viewport.removeChildren()
+    const old = this.viewport.removeChildren()
+    for (const child of old) child.destroy({ children: true })
 
     const layers = {
       water: new Container(),
