@@ -14,7 +14,6 @@ export interface EngineOptions {
 export class IsometricEngine {
   private app: Application
   private viewport!: Viewport
-  private scale: number
   private options: EngineOptions
   private palette?: number[]
   private lastFeatures: MapFeatures | null = null
@@ -24,7 +23,6 @@ export class IsometricEngine {
   constructor(options: EngineOptions) {
     this.options = options
     this.app = new Application()
-    this.scale = options.scale ?? 0.8
     this.palette = options.palette
   }
 
@@ -64,12 +62,6 @@ export class IsometricEngine {
     }
   }
 
-  resetCamera() {
-    if (!this.initialized) return
-    this.viewport.position.set(this.options.width / 2, this.options.height / 2)
-    this.viewport.scale.set(1, 1)
-  }
-
   render(features: MapFeatures) {
     if (!this.initialized) {
       // Queue until init completes; the latest features win.
@@ -89,11 +81,11 @@ export class IsometricEngine {
       trees: new Container(),
     }
 
-    renderWaters(features.waters, layers.water, this.scale)
-    renderGreens(features.greens, layers.green, this.scale)
-    renderRoads(features.roads, layers.roads, this.scale)
-    renderBuildings(features.buildings, layers.buildings, this.scale, this.palette)
-    renderTrees(features.trees, layers.trees, this.scale)
+    renderWaters(features.waters, layers.water, 1)
+    renderGreens(features.greens, layers.green, 1)
+    renderRoads(features.roads, layers.roads, 1)
+    renderBuildings(features.buildings, layers.buildings, 1, this.palette)
+    renderTrees(features.trees, layers.trees, 1)
 
     this.viewport.addChild(layers.water)
     this.viewport.addChild(layers.green)

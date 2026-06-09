@@ -24,7 +24,6 @@ export default function App() {
       canvas,
       width: window.innerWidth - SIDEBAR_WIDTH,
       height: window.innerHeight,
-      scale: 0.8,
       palette: PALETTES[0].colors,
     })
 
@@ -46,7 +45,6 @@ export default function App() {
     if (!map) return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     engine.render(loadMapFeatures(MAP_DATA[mapId] as any, map.center))
-    engine.resetCamera()
   }, [mapId])
 
   useEffect(() => {
