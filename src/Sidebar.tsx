@@ -26,7 +26,7 @@ export const PALETTES: Palette[] = [
 //   { name: 'Cyberpunk',  colors: [0xF92672, 0xAE81FF, 0x66D9EF, 0xA6E22E, 0xFD971F] },
 ]
 
-export type FilterId = 'oldFilm'
+export type FilterId = 'oldFilm' | 'ascii' | 'crt' | 'crossHatch' | 'pixelate' | 'dot' | 'glow'
 
 export interface FilterOption {
   id: FilterId
@@ -35,6 +35,11 @@ export interface FilterOption {
 
 export const FILTERS: FilterOption[] = [
   { id: 'oldFilm', label: 'Old Film' },
+  { id: 'ascii', label: 'ASCII' },
+  { id: 'crt', label: 'CRT' },
+  { id: 'crossHatch', label: 'Cross Hatch' },
+  { id: 'pixelate', label: 'Pixelate' },
+  { id: 'dot', label: 'Dot' },
 ]
 
 interface Props {

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { IsometricEngine, loadMapFeatures } from '../lib/isotoon/src'
 import Sidebar, { MAPS, PALETTES, SIDEBAR_WIDTH, type MapId, type FilterId } from './Sidebar'
-import { OldFilmFilter } from 'pixi-filters'
+import { OldFilmFilter, AsciiFilter, CRTFilter, CrossHatchFilter, PixelateFilter, DotFilter } from 'pixi-filters'
 import type { Filter, Ticker } from 'pixi.js'
 import maxvorstadt from '../assets/maxvorstadt.json'
 import cityOfLondon from '../assets/city-of-london.json'
@@ -72,6 +72,26 @@ export default function App() {
       const cb = () => { film.seed = Math.random() }
       tickerCallbacks.push(cb)
       engine.ticker.add(cb)
+    }
+
+    if (activeFilters.has('ascii')) {
+      filters.push(new AsciiFilter({ size: 16 }))
+    }
+
+    if (activeFilters.has('crt')) {
+      filters.push(new CRTFilter())
+    }
+
+    if (activeFilters.has('crossHatch')) {
+      filters.push(new CrossHatchFilter())
+    }
+
+    if (activeFilters.has('pixelate')) {
+      filters.push(new PixelateFilter(4))
+    }
+
+    if (activeFilters.has('dot')) {
+      filters.push(new DotFilter())
     }
 
     engine.setFilters(filters)
