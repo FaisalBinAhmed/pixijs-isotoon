@@ -10,6 +10,7 @@ export interface EngineOptions {
   height: number
   scale?: number
   palette?: number[]
+  rendererType?: 'webgl' | 'canvas'
 }
 
 export class IsometricEngine {
@@ -47,6 +48,7 @@ export class IsometricEngine {
       antialias: true,
       resolution: window.devicePixelRatio,
       autoDensity: true,
+      preference: this.options.rendererType ?? 'webgl',
     })
 
     const bg = new Graphics()

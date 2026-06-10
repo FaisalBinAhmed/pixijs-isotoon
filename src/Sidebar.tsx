@@ -26,6 +26,8 @@ export const PALETTES: Palette[] = [
 //   { name: 'Cyberpunk',  colors: [0xF92672, 0xAE81FF, 0x66D9EF, 0xA6E22E, 0xFD971F] },
 ]
 
+export type RendererType = 'webgl' | 'canvas'
+
 export type FilterId = 'oldFilm' | 'ascii' | 'crt' | 'crossHatch' | 'pixelate' | 'dot' | 'glow'
 
 export interface FilterOption {
@@ -49,9 +51,12 @@ interface Props {
   onPaletteChange: (name: string) => void
   activeFilters: Set<FilterId>
   onFilterToggle: (id: FilterId) => void
+  rendererType: RendererType
+  onRendererChange: (r: RendererType) => void
+  fps: number
 }
 
-export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChange, activeFilters, onFilterToggle }: Props) {
+export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChange, activeFilters, onFilterToggle, rendererType, onRendererChange, fps }: Props) {
   return (
     <aside style={styles.panel}>
       <h2 style={styles.title}>Settings</h2>
@@ -100,6 +105,27 @@ export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChan
         </div>
       </section>
 
+
+      <section style={styles.section}>
+        <label style={styles.label}>Renderer</label>
+        <div style={styles.rendererToggle}>
+          {(['webgl', 'canvas'] as RendererType[]).map(r => (
+            <button
+              key={r}
+              onClick={() => onRendererChange(r)}
+              style={{
+                ...styles.rendererBtn,
+                borderColor: rendererType === r ? '#fff' : '#455A64',
+                background: rendererType === r ? '#37474F' : '#263238',
+                fontWeight: rendererType === r ? 600 : 400,
+              }}
+            >
+              {r === 'webgl' ? 'WebGL' : 'Canvas'}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section style={styles.section}>
         <label style={styles.label}>Filters</label>
         <div style={styles.filters}>
@@ -114,6 +140,14 @@ export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChan
               <span>{f.label}</span>
             </label>
           ))}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <label style={styles.label}>Performance</label>
+        <div style={styles.fpsRow}>
+          <span style={styles.fpsValue}>{fps}</span>
+          <span style={styles.fpsUnit}>FPS</span>
         </div>
       </section>
     </aside>
@@ -180,6 +214,19 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 2,
     border: '1px solid rgba(0,0,0,0.3)',
   },
+  rendererToggle: { display: 'flex', gap: 6 },
+  rendererBtn: {
+    flex: 1,
+    padding: '7px 0',
+    border: '1px solid',
+    borderRadius: 4,
+    cursor: 'pointer',
+    color: '#eceff1',
+    fontSize: 13,
+  },
+  fpsRow: { display: 'flex', alignItems: 'baseline', gap: 6 },
+  fpsValue: { fontSize: 28, fontWeight: 600, fontVariantNumeric: 'tabular-nums', lineHeight: 1 },
+  fpsUnit: { fontSize: 12, opacity: 0.6 },
   filters: { display: 'flex', flexDirection: 'column', gap: 8 },
   filterRow: {
     display: 'flex',
