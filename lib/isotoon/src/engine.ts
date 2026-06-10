@@ -1,5 +1,6 @@
-import { Application, Container } from 'pixi.js'
+import { Application, Container, Graphics } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
+import type { Filter } from 'pixi.js'
 import type { MapFeatures } from './types'
 import { renderGreens, renderWaters, renderRoads, renderBuildings, renderTrees } from './renderers'
 
@@ -30,6 +31,10 @@ export class IsometricEngine {
     this.palette = palette
   }
 
+  setFilters(filters: Filter[]) {
+    this.app.stage.filters = filters.length > 0 ? filters : []
+  }
+
   rerender() {
     if (this.lastFeatures) this.render(this.lastFeatures)
   }
@@ -39,11 +44,15 @@ export class IsometricEngine {
       canvas: this.options.canvas,
       width: this.options.width,
       height: this.options.height,
-      background: 0x263238,
       antialias: true,
       resolution: window.devicePixelRatio,
       autoDensity: true,
     })
+
+    const bg = new Graphics()
+    bg.rect(0, 0, this.options.width, this.options.height)
+    bg.fill({ color: 0x263238 })
+    this.app.stage.addChild(bg)
 
     this.viewport = new Viewport({
       screenWidth: this.options.width,
@@ -51,6 +60,7 @@ export class IsometricEngine {
       events: this.app.renderer.events,
     })
     this.app.stage.addChild(this.viewport)
+
     this.viewport.drag().pinch().wheel().decelerate()
     this.viewport.position.set(this.options.width / 2, this.options.height / 2)
     this.initialized = true
@@ -92,6 +102,10 @@ export class IsometricEngine {
     this.viewport.addChild(layers.roads)
     this.viewport.addChild(layers.buildings)
     this.viewport.addChild(layers.trees)
+  }
+
+  get ticker() {
+    return this.app.ticker
   }
 
   destroy() {

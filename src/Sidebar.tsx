@@ -26,14 +26,32 @@ export const PALETTES: Palette[] = [
 //   { name: 'Cyberpunk',  colors: [0xF92672, 0xAE81FF, 0x66D9EF, 0xA6E22E, 0xFD971F] },
 ]
 
+export type FilterId = 'oldFilm' | 'ascii' | 'crt' | 'crossHatch' | 'pixelate' | 'dot' | 'glow'
+
+export interface FilterOption {
+  id: FilterId
+  label: string
+}
+
+export const FILTERS: FilterOption[] = [
+  { id: 'oldFilm', label: 'Old Film' },
+  { id: 'ascii', label: 'ASCII' },
+  { id: 'crt', label: 'CRT' },
+  { id: 'crossHatch', label: 'Cross Hatch' },
+  { id: 'pixelate', label: 'Pixelate' },
+  { id: 'dot', label: 'Dot' },
+]
+
 interface Props {
   mapId: MapId
   onMapChange: (id: MapId) => void
   paletteName: string
   onPaletteChange: (name: string) => void
+  activeFilters: Set<FilterId>
+  onFilterToggle: (id: FilterId) => void
 }
 
-export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChange }: Props) {
+export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChange, activeFilters, onFilterToggle }: Props) {
   return (
     <aside style={styles.panel}>
       <h2 style={styles.title}>Settings</h2>
@@ -79,6 +97,23 @@ export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChan
               </button>
             )
           })}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <label style={styles.label}>Filters</label>
+        <div style={styles.filters}>
+          {FILTERS.map(f => (
+            <label key={f.id} style={styles.filterRow}>
+              <input
+                type="checkbox"
+                checked={activeFilters.has(f.id)}
+                onChange={() => onFilterToggle(f.id)}
+                style={styles.checkbox}
+              />
+              <span>{f.label}</span>
+            </label>
+          ))}
         </div>
       </section>
     </aside>
@@ -145,4 +180,13 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 2,
     border: '1px solid rgba(0,0,0,0.3)',
   },
+  filters: { display: 'flex', flexDirection: 'column', gap: 8 },
+  filterRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    cursor: 'pointer',
+    fontSize: 13,
+  },
+  checkbox: { cursor: 'pointer' },
 }
