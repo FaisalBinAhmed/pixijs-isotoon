@@ -1,4 +1,5 @@
 import { Application, Container } from 'pixi.js'
+import { Viewport } from 'pixi-viewport'
 import type { MapFeatures } from './types'
 import { renderGreens, renderWaters, renderRoads, renderBuildings, renderTrees } from './renderers'
 
@@ -12,21 +13,16 @@ export interface EngineOptions {
 
 export class IsometricEngine {
   private app: Application
-  private world: Container
-  private scale: number
+  private viewport!: Viewport
   private options: EngineOptions
   private palette?: number[]
   private lastFeatures: MapFeatures | null = null
   private pendingFeatures: MapFeatures | null = null
-  private dragging = false
-  private lastPos = { x: 0, y: 0 }
   private initialized = false
 
   constructor(options: EngineOptions) {
     this.options = options
     this.app = new Application()
-    this.world = new Container()
-    this.scale = options.scale ?? 0.8
     this.palette = options.palette
   }
 
@@ -49,9 +45,14 @@ export class IsometricEngine {
       autoDensity: true,
     })
 
-    this.app.stage.addChild(this.world)
-    this.world.position.set(this.options.width / 2, this.options.height / 2)
-    this.setupInteraction()
+    this.viewport = new Viewport({
+      screenWidth: this.options.width,
+      screenHeight: this.options.height,
+      events: this.app.renderer.events,
+    })
+    this.app.stage.addChild(this.viewport)
+    this.viewport.drag().pinch().wheel().decelerate()
+    this.viewport.position.set(this.options.width / 2, this.options.height / 2)
     this.initialized = true
 
     if (this.pendingFeatures) {
@@ -59,12 +60,6 @@ export class IsometricEngine {
       this.pendingFeatures = null
       this.render(f)
     }
-  }
-
-  resetCamera() {
-    if (!this.initialized) return
-    this.world.position.set(this.options.width / 2, this.options.height / 2)
-    this.world.scale.set(1, 1)
   }
 
   render(features: MapFeatures) {
@@ -75,7 +70,8 @@ export class IsometricEngine {
       return
     }
     this.lastFeatures = features
-    this.world.removeChildren()
+    const old = this.viewport.removeChildren()
+    for (const child of old) child.destroy({ children: true })
 
     const layers = {
       water: new Container(),
@@ -85,49 +81,21 @@ export class IsometricEngine {
       trees: new Container(),
     }
 
-    renderWaters(features.waters, layers.water, this.scale)
-    renderGreens(features.greens, layers.green, this.scale)
-    renderRoads(features.roads, layers.roads, this.scale)
-    renderBuildings(features.buildings, layers.buildings, this.scale, this.palette)
-    renderTrees(features.trees, layers.trees, this.scale)
+    renderWaters(features.waters, layers.water, 1)
+    renderGreens(features.greens, layers.green, 1)
+    renderRoads(features.roads, layers.roads, 1)
+    renderBuildings(features.buildings, layers.buildings, 1, this.palette)
+    renderTrees(features.trees, layers.trees, 1)
 
-    this.world.addChild(layers.water)
-    this.world.addChild(layers.green)
-    this.world.addChild(layers.roads)
-    this.world.addChild(layers.buildings)
-    this.world.addChild(layers.trees)
+    this.viewport.addChild(layers.water)
+    this.viewport.addChild(layers.green)
+    this.viewport.addChild(layers.roads)
+    this.viewport.addChild(layers.buildings)
+    this.viewport.addChild(layers.trees)
   }
 
   destroy() {
     if (!this.initialized) return
     this.app.destroy(true)
-  }
-
-  private setupInteraction() {
-    const canvas = this.options.canvas
-
-    canvas.addEventListener('pointerdown', (e) => {
-      this.dragging = true
-      this.lastPos = { x: e.clientX, y: e.clientY }
-    })
-
-    canvas.addEventListener('pointermove', (e) => {
-      if (!this.dragging) return
-      const dx = e.clientX - this.lastPos.x
-      const dy = e.clientY - this.lastPos.y
-      this.world.position.x += dx
-      this.world.position.y += dy
-      this.lastPos = { x: e.clientX, y: e.clientY }
-    })
-
-    canvas.addEventListener('pointerup', () => { this.dragging = false })
-    canvas.addEventListener('pointerleave', () => { this.dragging = false })
-
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault()
-      const factor = e.deltaY > 0 ? 0.9 : 1.1
-      this.world.scale.x *= factor
-      this.world.scale.y *= factor
-    }, { passive: false })
   }
 }
