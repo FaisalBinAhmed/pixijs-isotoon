@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 
 export type MapId = 'maxvorstadt' | 'city-of-london'
 
@@ -44,6 +44,23 @@ export const FILTERS: FilterOption[] = [
   { id: 'dot', label: 'Dot' },
 ]
 
+export const SIDEBAR_WIDTH = 280
+export const MOBILE_BREAKPOINT = 768
+const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT}px)`
+
+export function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(MOBILE_MEDIA_QUERY).matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_MEDIA_QUERY)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
+
 interface Props {
   mapId: MapId
   onMapChange: (id: MapId) => void
@@ -57,9 +74,47 @@ interface Props {
 }
 
 export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChange, activeFilters, onFilterToggle, rendererType, onRendererChange, fps }: Props) {
+  const isMobile = useIsMobile()
+  const [isOpen, setIsOpen] = useState(false)
+
+  // Auto-close when transitioning to mobile so the sidebar doesn't cover the map.
+  useEffect(() => {
+    if (isMobile) setIsOpen(false)
+  }, [isMobile])
+
+  const panelHidden = isMobile && !isOpen
+
   return (
-    <aside style={styles.panel}>
-      <h2 style={styles.title}>Settings</h2>
+    <>
+      {isMobile && (
+        <button
+          aria-label={isOpen ? 'Close settings' : 'Open settings'}
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen(o => !o)}
+          style={styles.toggleBtn}
+        >
+          {isOpen ? '✕' : '☰'}
+        </button>
+      )}
+
+      {isMobile && isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          style={styles.backdrop}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        style={{
+          ...styles.panel,
+          transform: panelHidden ? 'translateX(100%)' : 'translateX(0)',
+          transition: 'transform 220ms ease',
+          boxShadow: isMobile && isOpen ? '-4px 0 24px rgba(0,0,0,0.5)' : 'none',
+        }}
+        aria-hidden={panelHidden}
+      >
+        <h2 style={styles.title}>Settings</h2>
 
       <section style={styles.section}>
         <label style={styles.label}>Map</label>
@@ -151,10 +206,9 @@ export default function Sidebar({ mapId, onMapChange, paletteName, onPaletteChan
         </div>
       </section>
     </aside>
+    </>
   )
 }
-
-export const SIDEBAR_WIDTH = 280
 
 const styles: Record<string, CSSProperties> = {
   panel: {
@@ -163,6 +217,7 @@ const styles: Record<string, CSSProperties> = {
     right: 0,
     height: '100vh',
     width: SIDEBAR_WIDTH,
+    maxWidth: '85vw',
     background: 'rgba(20, 26, 32, 0.92)',
     color: '#eceff1',
     padding: '20px 18px',
@@ -172,7 +227,33 @@ const styles: Record<string, CSSProperties> = {
     backdropFilter: 'blur(6px)',
     borderLeft: '1px solid #37474F',
     overflowY: 'auto',
-    zIndex: 10,
+    zIndex: 20,
+  },
+  toggleBtn: {
+    position: 'fixed',
+    top: 12,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    border: '1px solid #455A64',
+    background: 'rgba(20, 26, 32, 0.92)',
+    color: '#eceff1',
+    fontSize: 20,
+    lineHeight: 1,
+    cursor: 'pointer',
+    zIndex: 30,
+    backdropFilter: 'blur(6px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+  },
+  backdrop: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0, 0, 0, 0.4)',
+    zIndex: 15,
   },
   title: { fontSize: 16, marginBottom: 16, fontWeight: 600 },
   section: { marginBottom: 20 },
