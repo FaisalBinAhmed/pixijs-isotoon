@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { IsometricEngine, loadMapFeatures } from '../lib/isotoon/src'
-import Sidebar, { MAPS, PALETTES, SIDEBAR_WIDTH, type MapId, type FilterId } from './Sidebar'
+import Sidebar, { MAPS, PALETTES, SIDEBAR_WIDTH, type MapId, type FilterId, type RendererType } from './Sidebar'
 import { OldFilmFilter, AsciiFilter, CRTFilter, CrossHatchFilter, PixelateFilter, DotFilter } from 'pixi-filters'
 import type { Filter, Ticker } from 'pixi.js'
 import maxvorstadt from '../assets/maxvorstadt.json'
@@ -16,8 +16,13 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<IsometricEngine | null>(null)
   const [mapId, setMapId] = useState<MapId>('maxvorstadt')
+  const mapIdRef = useRef<MapId>('maxvorstadt')
   const [paletteName, setPaletteName] = useState<string>(PALETTES[0].name)
   const [activeFilters, setActiveFilters] = useState<Set<FilterId>>(new Set())
+  const [rendererType, setRendererType] = useState<RendererType>('webgl')
+  const [fps, setFps] = useState(0)
+
+  useEffect(() => { mapIdRef.current = mapId }, [mapId])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -28,18 +33,24 @@ export default function App() {
       width: window.innerWidth - SIDEBAR_WIDTH,
       height: window.innerHeight,
       palette: PALETTES[0].colors,
+      rendererType,
     })
 
     engineRef.current = engine
 
-    engine.init()
+    engine.init().then(() => {
+      if (engineRef.current !== engine) return
+      const map = MAPS.find(m => m.id === mapIdRef.current)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (map) engine.render(loadMapFeatures(MAP_DATA[mapIdRef.current] as any, map.center))
+    })
 
     return () => {
       engine.destroy()
       engineRef.current = null
     }
 
-  }, [])
+  }, [rendererType])
 
   useEffect(() => {
     const engine = engineRef.current
@@ -49,6 +60,24 @@ export default function App() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     engine.render(loadMapFeatures(MAP_DATA[mapId] as any, map.center))
   }, [mapId])
+
+  useEffect(() => {
+    let lastTime = performance.now()
+    let frameCount = 0
+    let rafId: number
+
+    const measure = () => {
+      frameCount++
+      const now = performance.now()
+      if (frameCount % 20 === 0) {
+        setFps(Math.round((20 * 1000) / (now - lastTime)))
+        lastTime = now
+      }
+      rafId = requestAnimationFrame(measure)
+    }
+    rafId = requestAnimationFrame(measure)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
 
   useEffect(() => {
     const engine = engineRef.current
@@ -114,7 +143,7 @@ export default function App() {
 
   return (
     <>
-      <canvas ref={canvasRef} style={{ width: `calc(100vw - ${SIDEBAR_WIDTH}px)`, height: '100vh', display: 'block' }} />
+      <canvas key={rendererType} ref={canvasRef} style={{ width: `calc(100vw - ${SIDEBAR_WIDTH}px)`, height: '100vh', display: 'block' }} />
       <Sidebar
         mapId={mapId}
         onMapChange={setMapId}
@@ -122,6 +151,9 @@ export default function App() {
         onPaletteChange={setPaletteName}
         activeFilters={activeFilters}
         onFilterToggle={handleFilterToggle}
+        rendererType={rendererType}
+        onRendererChange={setRendererType}
+        fps={fps}
       />
     </>
   )
