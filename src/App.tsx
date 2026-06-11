@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { IsometricEngine, loadMapFeatures } from '../lib/isotoon/src'
-import Sidebar, { MAPS, PALETTES, SIDEBAR_WIDTH, type MapId, type FilterId, type RendererType } from './Sidebar'
+import Sidebar, { MAPS, PALETTES, SIDEBAR_WIDTH, useIsMobile, type MapId, type FilterId, type RendererType } from './Sidebar'
 import { OldFilmFilter, AsciiFilter, CRTFilter, CrossHatchFilter, PixelateFilter, DotFilter } from 'pixi-filters'
 import type { Filter, Ticker } from 'pixi.js'
 import maxvorstadt from '../assets/maxvorstadt.json'
@@ -21,6 +21,7 @@ export default function App() {
   const [activeFilters, setActiveFilters] = useState<Set<FilterId>>(new Set())
   const [rendererType, setRendererType] = useState<RendererType>('webgl')
   const [fps, setFps] = useState(0)
+  const isMobile = useIsMobile()
 
   useEffect(() => { mapIdRef.current = mapId }, [mapId])
 
@@ -28,9 +29,10 @@ export default function App() {
     const canvas = canvasRef.current
     if (!canvas) return
 
+    const sidebarOffset = isMobile ? 0 : SIDEBAR_WIDTH
     const engine = new IsometricEngine({
       canvas,
-      width: window.innerWidth - SIDEBAR_WIDTH,
+      width: window.innerWidth - sidebarOffset,
       height: window.innerHeight,
       palette: PALETTES[0].colors,
       rendererType,
@@ -50,7 +52,7 @@ export default function App() {
       engineRef.current = null
     }
 
-  }, [rendererType])
+  }, [rendererType, isMobile])
 
   useEffect(() => {
     const engine = engineRef.current
@@ -143,7 +145,7 @@ export default function App() {
 
   return (
     <>
-      <canvas key={rendererType} ref={canvasRef} style={{ width: `calc(100vw - ${SIDEBAR_WIDTH}px)`, height: '100vh', display: 'block' }} />
+      <canvas key={`${rendererType}-${isMobile ? 'm' : 'd'}`} ref={canvasRef} style={{ width: isMobile ? '100vw' : `calc(100vw - ${SIDEBAR_WIDTH}px)`, height: '100vh', display: 'block' }} />
       <Sidebar
         mapId={mapId}
         onMapChange={setMapId}
